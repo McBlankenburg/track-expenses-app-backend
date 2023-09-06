@@ -10,9 +10,11 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import pl.byczazagroda.trackexpensesappbackend.config.WebSecurityConfig;
 import pl.byczazagroda.trackexpensesappbackend.dto.WalletDTO;
 import pl.byczazagroda.trackexpensesappbackend.exception.ErrorStrategy;
 import pl.byczazagroda.trackexpensesappbackend.mapper.WalletModelMapper;
@@ -28,13 +30,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = WalletController.class,
         excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = WalletServiceImpl.class),
-        includeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {WalletModelMapper.class, ErrorStrategy.class}))
+        includeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes =
+                {WalletModelMapper.class, ErrorStrategy.class, WebSecurityConfig.class}))
 @ActiveProfiles("test")
 class WalletDeleteControllerTest {
 
     private static final Long ID_0L = 0L;
 
-    private static final Long ID_1L = 1L;
+    private static final Long WALLET_ID_1L = 1L;
+
+    private static final Long USER_ID_1L = 1L;
 
     private static final String NAME_1 = "Wallet name";
 
@@ -52,13 +57,15 @@ class WalletDeleteControllerTest {
     @Test
     @DisplayName("when delete wallet correctly should return response status OK")
     void shouldReturnResponseStatusOK_WhenDeleteWalletCorrectly() throws Exception {
+        //fixme do poprawki
         //given
-        WalletDTO walletDTO = new WalletDTO(ID_1L, NAME_1, DATE_NOW);
+        WalletDTO walletDTO = new WalletDTO(WALLET_ID_1L, NAME_1, DATE_NOW, USER_ID_1L);
 
         //when
-        ResultActions result = mockMvc.perform(delete("/api/wallets/{id}", ID_1L)
+        ResultActions result = mockMvc.perform(delete("/api/wallets/{id}", WALLET_ID_1L)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(Objects.requireNonNull(objectMapper.writeValueAsString(walletDTO))));
+                .content(Objects.requireNonNull(objectMapper.writeValueAsString(walletDTO)))
+                .with(SecurityMockMvcRequestPostProcessors.user(String.valueOf(USER_ID_1L))));
 
         //then
         result.andExpect(status().isOk());
@@ -69,8 +76,8 @@ class WalletDeleteControllerTest {
     @DisplayName("when wallet id is zero should return response status no content")
     void shouldReturnResponseStatusNoContent_WhenWalletIdIsZero() throws Exception {
         //given
-        WalletDTO walletDTO = new WalletDTO(ID_1L, NAME_1, DATE_NOW);
-        doThrow(ConstraintViolationException.class).when(walletService).deleteWalletById(ID_0L);
+        WalletDTO walletDTO = new WalletDTO(WALLET_ID_1L, NAME_1, DATE_NOW, USER_ID_1L);
+        doThrow(ConstraintViolationException.class).when(walletService).deleteWalletById(ID_0L, USER_ID_1L);
 
         //when
         ResultActions result = mockMvc.perform(delete("/api/wallets/{id}", ID_0L)

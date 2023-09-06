@@ -13,7 +13,10 @@ import pl.byczazagroda.trackexpensesappbackend.dto.WalletUpdateDTO;
 import pl.byczazagroda.trackexpensesappbackend.dto.WalletDTO;
 import pl.byczazagroda.trackexpensesappbackend.exception.ErrorStrategy;
 import pl.byczazagroda.trackexpensesappbackend.mapper.WalletModelMapper;
+import pl.byczazagroda.trackexpensesappbackend.model.User;
+import pl.byczazagroda.trackexpensesappbackend.model.UserStatus;
 import pl.byczazagroda.trackexpensesappbackend.model.Wallet;
+import pl.byczazagroda.trackexpensesappbackend.repository.UserRepository;
 import pl.byczazagroda.trackexpensesappbackend.repository.WalletRepository;
 
 import java.time.Instant;
@@ -30,7 +33,9 @@ import static org.mockito.BDDMockito.given;
                 classes = {WalletRepository.class, WalletServiceImpl.class}))
 class WalletUpdateServiceImplTest {
 
-    public static final long ID_1L = 1L;
+    public static final long WALLET_ID_1L = 1L;
+
+    public static final long USER_ID_1L = 1L;
 
     private static final String NAME_1 = "wallet name one";
 
@@ -44,6 +49,9 @@ class WalletUpdateServiceImplTest {
     @MockBean
     private WalletRepository walletRepository;
 
+    @MockBean
+    private UserRepository userRepository;
+
     @Autowired
     private WalletServiceImpl walletService;
 
@@ -54,19 +62,36 @@ class WalletUpdateServiceImplTest {
     @DisplayName("when finding wallet by id should update wallet")
     void shouldUpdateWallet_whenFindWalletById() {
         // given
+        User user = createTestUser();
+
         WalletUpdateDTO walletUpdateDto = new WalletUpdateDTO(NAME_1);
-        Wallet wallet = new Wallet(NAME_2);
-        wallet.setId(ID_1L);
-        wallet.setCreationDate(DATE_NOW);
-        WalletDTO newWalletDTO = new WalletDTO(ID_1L, NAME_1, DATE_NOW);
-        given(walletRepository.findById(ID_1L)).willReturn(Optional.of(wallet));
+
+        Wallet wallet = Wallet.builder()
+                .id(WALLET_ID_1L)
+                .name(NAME_2)
+                .creationDate(DATE_NOW)
+                .user(user)
+                .build();
+
+        WalletDTO newWalletDTO = new WalletDTO(WALLET_ID_1L, NAME_1, DATE_NOW, USER_ID_1L);
+        given(walletRepository.findById(WALLET_ID_1L)).willReturn(Optional.of(wallet));
         given(walletModelMapper.mapWalletEntityToWalletDTO(wallet)).willReturn(newWalletDTO);
 
         // when
-        WalletDTO walletDTO = walletService.updateWallet(ID_1L, walletUpdateDto);
+        WalletDTO walletDTO = walletService.updateWallet(WALLET_ID_1L, walletUpdateDto, USER_ID_1L);
 
         // then
         assertThat(walletDTO.name()).isEqualTo(walletUpdateDto.name());
+    }
+
+    private User createTestUser() {
+        return User.builder()
+                .id(USER_ID_1L)
+                .userName("userone")
+                .email("Email@wp.pl")
+                .password("password1@")
+                .userStatus(UserStatus.VERIFIED)
+                .build();
     }
 
 }

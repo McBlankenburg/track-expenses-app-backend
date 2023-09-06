@@ -48,7 +48,7 @@ public class FinancialTransaction implements Serializable {
     private Wallet wallet;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "transaction_type")
+    @Column(name = "transaction_type", columnDefinition = "ENUM('INCOME', 'EXPENSE')")
     private FinancialTransactionType type;
 
     @DecimalMin("0.0")
@@ -60,6 +60,9 @@ public class FinancialTransaction implements Serializable {
 
     @Size(max = 255)
     private String description;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private FinancialTransactionCategory financialTransactionCategory;
 
     @Override
     public boolean equals(Object o) {

@@ -1,6 +1,6 @@
 databaseChangeLog:
   - changeSet:
-      id: "7"
+      id: "create table financial transaction categories"
       author: Krisu93
       changes:
         - createTable:
@@ -15,7 +15,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: name
-                  type: varchar(20)
+                  type: varchar(30)
                   constraints:
                     nullable: false
               - column:

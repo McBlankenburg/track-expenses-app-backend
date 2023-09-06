@@ -9,13 +9,17 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import pl.byczazagroda.trackexpensesappbackend.config.WebSecurityConfig;
+import pl.byczazagroda.trackexpensesappbackend.dto.UserDTO;
 import pl.byczazagroda.trackexpensesappbackend.dto.WalletCreateDTO;
 import pl.byczazagroda.trackexpensesappbackend.dto.WalletDTO;
 import pl.byczazagroda.trackexpensesappbackend.exception.ErrorStrategy;
 import pl.byczazagroda.trackexpensesappbackend.mapper.WalletModelMapper;
+import pl.byczazagroda.trackexpensesappbackend.model.UserStatus;
 import pl.byczazagroda.trackexpensesappbackend.service.WalletService;
 import pl.byczazagroda.trackexpensesappbackend.service.WalletServiceImpl;
 
@@ -28,11 +32,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = WalletController.class,
         excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = WalletServiceImpl.class),
-        includeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {WalletModelMapper.class, ErrorStrategy.class}))
+        includeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes =
+                {WalletModelMapper.class, ErrorStrategy.class, WebSecurityConfig.class}))
 @ActiveProfiles("test")
 class WalletCreateControllerTest {
 
-    private static final Long ID_1L = 1L;
+    private static final Long WALLET_ID_1L = 1L;
+
+    private static final Long USER_ID_1L = 1L;
 
     private static final String INVALID_NAME = "@#$%^&";
 
@@ -54,13 +61,14 @@ class WalletCreateControllerTest {
     void shouldNotCreateWalletAndReturnResponseStatusBadRequestStatus_WhenWalletNameContainsIllegalLetters() throws Exception {
         // given
         WalletCreateDTO dto = new WalletCreateDTO(INVALID_NAME);
-        given(walletService.createWallet(dto))
-                .willReturn(new WalletDTO(ID_1L, INVALID_NAME, DATE_NOW));
+        given(walletService.createWallet(dto, USER_ID_1L))
+                .willReturn(new WalletDTO(WALLET_ID_1L, INVALID_NAME, DATE_NOW, USER_ID_1L));
 
         // when
         ResultActions resultActions = mockMvc.perform(post("/api/wallets")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(Objects.requireNonNull(objectMapper.writeValueAsString(dto))));
+                .content(Objects.requireNonNull(objectMapper.writeValueAsString(dto)))
+                .with(SecurityMockMvcRequestPostProcessors.user(String.valueOf(USER_ID_1L))));
 
         // then
         resultActions.andExpect(status().isBadRequest());
@@ -71,13 +79,14 @@ class WalletCreateControllerTest {
     void shouldReturnResponseStatusBadRequest_WhenWalletNameIsEmpty() throws Exception {
         // given
         WalletCreateDTO dto = new WalletCreateDTO("");
-        given(walletService.createWallet(dto))
-                .willReturn(new WalletDTO(ID_1L, "", DATE_NOW));
+        given(walletService.createWallet(dto, USER_ID_1L))
+                .willReturn(new WalletDTO(WALLET_ID_1L, "", DATE_NOW, USER_ID_1L));
 
         // when
         ResultActions resultActions = mockMvc.perform(post("/api/wallets")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(Objects.requireNonNull(objectMapper.writeValueAsString(dto))));
+                .content(Objects.requireNonNull(objectMapper.writeValueAsString(dto)))
+                .with(SecurityMockMvcRequestPostProcessors.user(String.valueOf(USER_ID_1L))));
 
         // then
         resultActions.andExpect(status().isBadRequest());
@@ -88,13 +97,14 @@ class WalletCreateControllerTest {
     void shouldReturnResponseStatusBadRequest_WhenWalletNameIsNull() throws Exception {
         // given
         WalletCreateDTO dto = new WalletCreateDTO(null);
-        given(walletService.createWallet(dto))
-                .willReturn(new WalletDTO(ID_1L, null, DATE_NOW));
+        given(walletService.createWallet(dto, USER_ID_1L))
+                .willReturn(new WalletDTO(WALLET_ID_1L, null, DATE_NOW, USER_ID_1L));
 
         // when
         ResultActions resultActions = mockMvc.perform(post("/api/wallets")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(Objects.requireNonNull(objectMapper.writeValueAsString(dto))));
+                .content(Objects.requireNonNull(objectMapper.writeValueAsString(dto)))
+                .with(SecurityMockMvcRequestPostProcessors.user(String.valueOf(USER_ID_1L))));
 
         // then
         resultActions.andExpect(status().isBadRequest());
@@ -105,16 +115,26 @@ class WalletCreateControllerTest {
     void shouldReturnResponseStatusBadRequest_WhenWalletNameIsTooLong() throws Exception {
         // given
         WalletCreateDTO dto = new WalletCreateDTO(TOO_LONG_NAME_MORE_THAN_20_LETTERS);
-        given(walletService.createWallet(dto))
-                .willReturn(new WalletDTO(ID_1L, TOO_LONG_NAME_MORE_THAN_20_LETTERS, DATE_NOW));
+        given(walletService.createWallet(dto, USER_ID_1L))
+                .willReturn(new WalletDTO(WALLET_ID_1L, TOO_LONG_NAME_MORE_THAN_20_LETTERS, DATE_NOW, USER_ID_1L));
 
         // when
         ResultActions resultActions = mockMvc.perform(post("/api/wallets")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(Objects.requireNonNull(objectMapper.writeValueAsString(dto))));
+                .content(Objects.requireNonNull(objectMapper.writeValueAsString(dto)))
+                .with(SecurityMockMvcRequestPostProcessors.user(String.valueOf(USER_ID_1L))));
 
         // then
         resultActions.andExpect(status().isBadRequest());
     }
 
+    private UserDTO createTestUserDTO() {
+        return UserDTO.builder()
+                .id(1L)
+                .userName("userone")
+                .email("Email@wp.pl")
+                .password("password1@")
+                .userStatus(UserStatus.VERIFIED)
+                .build();
+    }
 }
